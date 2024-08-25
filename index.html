@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра Змейка</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            background-color: #333;
+            width: 100%;
+            padding: 10px 0;
+            text-align: center;
+        }
+
+        nav ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            margin: 0 15px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        #game-container {
+            margin-top: 20px;
+        }
+
+        canvas {
+            border: 2px solid #333;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        button {
+            background-color: #333;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="#" id="earnings">Заработанные деньги</a></li>
+                <li><a href="#" id="withdraw">Вывод средств</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <div id="game-container">
+        <canvas id="game"></canvas>
+    </div>
+
+    <div id="balance-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Баланс</h2>
+            <p id="balance-amount">0</p>
+        </div>
+    </div>
+
+    <div id="withdraw-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Вывод средств</h2>
+            <form id="withdraw-form">
+                <label for="card-number">Номер карты:</label>
+                <input type="text" id="card-number" required>
+                <label for="name">Имя:</label>
+                <input type="text" id="name" required>
+                <label for="surname">Фамилия:</label>
+                <input type="text" id="surname" required>
+                <button type="submit">Отправить</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Логика игры "Змейка"
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 400;
+        canvas.height = 400;
+
+        const snake = [{ x: 200, y: 200 }];
+        let snakeLength = 1;
+        let direction = { x: 10, y: 0 };
+        let food = { x: 100, y: 100 };
+        let score = 0;
+
+        function drawSnake() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            snake.forEach(part => {
+                ctx.fillStyle = 'green';
+                ctx.fillRect(part.x, part.y, 10, 10);
+            });
+        }
+
+        function moveSnake() {
+            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+            snake.unshift(head);
+            if (snake.length > snakeLength) {
+                snake.pop();
+            }
+        }
+
+        function checkCollision() {
+            if (snake[0].x < 0 || snake[0].x >= canvas.width || snake[0].y < 0 || snake[0].y >= canvas.height) {
+                resetGame();
+            }
+            for (let i = 1; i < snake.length; i++) {
+                if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) {
+                    resetGame();
+                }
+            }
+        }
+
+        function drawFood() {
+            ctx.fillStyle = 'red';
+            ctx.fillRect(food.x, food.y, 10, 10);
+        }
+
+        function checkFoodCollision() {
+            if (snake[0].x === food.x && snake[0].y === food.y) {
+                snakeLength++;
+                score += 10;
+                updateBalance();
+                food = {
+                    x: Math.floor(Math.random() * 40) * 10,
+                    y: Math.floor(Math.random() * 40) * 10
+                };
+            }
+        }
+
+        function resetGame() {
+            snake.length = 1;
+            snake[0] = { x: 200, y: 200 };
+            direction = { x: 10, y: 0 };
+            snakeLength = 1;
+            score = 0;
+            updateBalance();
+        }
+
+        function updateBalance() {
+            document.getElementById('balance-amount').textContent = score;
+        }
+
+        function gameLoop() {
+            moveSnake();
+            checkCollision();
+            checkFoodCollision();
+            drawSnake();
+            drawFood();
+            setTimeout(gameLoop, 100);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' && direction.y === 0) direction = { x: 0, y: -10 };
+            if (e.key === 'ArrowDown' && direction.y === 0) direction = { x: 0, y: 10 };
+            if (e.key === 'ArrowLeft' && direction.x === 0) direction = { x: -10, y: 0 };
+            if (e.key === 'ArrowRight' && direction.x === 0) direction = { x: 10, y: 0 };
+        });
+
+        gameLoop();
+
+        // Логика модальных окон
+        const balanceModal = document.getElementById('balance-modal');
+        const withdrawModal = document.getElementById('withdraw-modal');
+        const balanceLink = document.getElementById('earnings');
+        const withdrawLink = document.getElementById('withdraw');
+        const closeButtons = document.querySelectorAll('.close');
+
+        balanceLink.onclick = function() {
+            balanceModal.style.display = "block";
+        };
+
+        withdrawLink.onclick = function() {
+            withdrawModal.style.display = "block";
+        };
+
+        closeButtons.forEach(button => {
+            button.onclick = function() {
+                balanceModal.style.display = "none";
+                withdrawModal.style.display = "none";
+            };
+        });
+
+        window.onclick = function(event) {
+            if (event.target === balanceModal) {
+                balanceModal.style.display = "none";
+            }
+            if (event.target === withdrawModal) {
+                withdrawModal.style.display = "none";
+            }
+        };
+    </script>
+</body>
+</html>
